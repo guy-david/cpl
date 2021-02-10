@@ -80,6 +80,9 @@ class Lexer:
         while self._c.isspace():
             self._c = self._read_char()
 
+        # Remember start of token
+        line, column = self.line, self.column
+
         # Handle keywords and identifiers
         if self._c == '_' or self._c.isalpha():
             identifier = self._c
@@ -154,18 +157,16 @@ class Lexer:
                 return None
             self._raise_error(f'Did not expect \'{self._c}\'')
 
-        return Token(kind, self.stream.name, self.line, self.column, data)
+        return Token(kind, self.stream.name, line, column, data)
 
     def _read_char(self):
         c = self.stream.read(1)
+        self.column += 1
         if len(c) == 0:
             self.eof = True
-        elif c.isspace():
-            if c == '\n':
-                self.line += 1
-                self.column = 1
-            else:
-                self.column += 1
+        elif c == '\n':
+            self.line += 1
+            self.column = 1
         return c
 
     def _raise_error(self, msg):

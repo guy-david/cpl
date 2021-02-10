@@ -128,7 +128,7 @@ class Parser:
             self._parse_stmt_list()
             self._expect(Token.RBRACE)
 
-        elif self._parse_expr():
+        elif self._try_parse_expr():
             self._expect(Token.SEMICOLON)
 
         else:
@@ -178,6 +178,12 @@ class Parser:
             self._parse_expr()
 
     def _parse_expr(self):
+        expr = self._try_parse_expr()
+        if expr is None:
+            self.raise_syntax_error('Expected an expression')
+        return expr
+
+    def _try_parse_expr(self):
         term = self._parse_term1()
         while True:
             if self._accept(Token.ASSIGN):
@@ -244,17 +250,17 @@ class Parser:
             self._token = self._lexer.next_token()
 
     def _accept(self, token_kind):
-        result = None
+        token = None
         if self._token is not None and self._token.kind == token_kind:
-            result = self._token
+            token = self._token
             self._advance()
-        return result
+        return token
 
     def _expect(self, token_kind):
-        result = self._accept(token_kind)
-        if result is None:
+        token = self._accept(token_kind)
+        if token is None:
             self.raise_syntax_error(f'Expected a {Token.kind_to_str(token_kind)}')
-        return result
+        return token
 
     def raise_syntax_error(self, msg):
         file_path, line, column = self._token.file_path, self._token.line, self._token.column

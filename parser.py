@@ -13,6 +13,9 @@ class Parser:
     class SyntaxError(Exception):
         pass
 
+    class SemanticError(Exception):
+        pass
+
     TYPES = {
         Token.INT: Integer,
         Token.FLOAT: Float,
@@ -28,19 +31,23 @@ class Parser:
         self._parse_program()
 
     def _parse_program(self):
-        decls = self._parse_declarations()
-        block = self._parse_stmt_block()
+        self.variables = self._parse_declarations()
+        self.stmts = self._parse_stmt_block()
 
     def _parse_declarations(self):
-        decls = []
+        variables = {}
         while True:
-            variables = self._parse_id_list()
-            if len(variables) == 0:
-                return decls
+            idents = self._parse_id_list()
+            if len(idents) == 0:
+                return variables
             self._expect(Token.COLON)
             type_class = self._parse_type()
             self._expect(Token.SEMICOLON)
-        return decls
+            for v in idents:
+                if v in variables:
+                    self.raise_error(self.SyntaxError, f'{v} is already declared')
+                variables[v] = Variable(v, type_class)
+        return variables
 
     def _parse_type(self):
         for token, type_class in self.TYPES.items():
@@ -49,17 +56,17 @@ class Parser:
         self._expected('Expected a type')
 
     def _parse_id_list(self):
-        variables = []
+        idents = []
         while True:
             variable = self._accept(Token.IDENTIFIER)
             if variable is None:
-                return variables
+                return idents
 
-            variables.append(variable)
+            idents.append(variable.data)
             while self._accept(Token.COMMA):
                 variable = self._expect(Token.IDENTIFIER)
-                variables.append(variable)
-        return variables
+                idents.append(variable.data)
+        return idents
 
     def _parse_stmt_block(self):
         self._expect(Token.LBRACE)
@@ -68,38 +75,50 @@ class Parser:
         return stmts
 
     def _parse_stmt_list(self):
+        stmts = []
         while True:
             stmt = self._parse_stmt()
             if stmt is None:
                 break
+            stmts.append(stmt)
+        return stmts
 
     def _parse_stmt(self):
         if self._accept(Token.IF):
             self._expect(Token.LPAREN)
-            self._parse_boolexpr()
+            condition = self._parse_expr()
             self._expect(Token.RPAREN)
-            self._parse_stmt()
+            true_case = self._parse_stmt()
 
+            false_case = None
             if self._accept(Token.ELSE):
-                self._parse_stmt()
+                false_case = self._parse_stmt()
+
+            return Cond(condition, true_case, false_case)
 
         elif self._accept(Token.INPUT):
             self._expect(Token.LPAREN)
-            self._expect(Token.IDENTIFIER)
+            ident = self._expect(Token.IDENTIFIER)
             self._expect(Token.RPAREN)
             self._expect(Token.SEMICOLON)
+
+            return Input(ident)
 
         elif self._accept(Token.OUTPUT):
             self._expect(Token.LPAREN)
-            self._parse_expr()
+            expr = self._parse_expr()
             self._expect(Token.RPAREN)
             self._expect(Token.SEMICOLON)
 
+            return Output(expr)
+
         elif self._accept(Token.WHILE):
             self._expect(Token.LPAREN)
-            self._parse_boolexpr()
+            condition = self._parse_expr()
             self._expect(Token.RPAREN)
-            self._parse_stmt()
+            body = self._parse_stmt()
+
+            return While(condition, body)
 
         elif self._accept(Token.SWITCH):
             self._expect(Token.LPAREN)
@@ -108,29 +127,40 @@ class Parser:
 
             self._expect(Token.LBRACE)
 
-            while self._accept(Token.CASE):
-                self._parse_expr()
+            cases = []
+            default_case = None
+
+            while self._accept(Token.CASE) or self._accept(Token.DEFAULT):
+                parsing_case = self._last_accepted_token.kind == Token.CASE
+                if parsing_case:
+                    case_expr = self._parse_expr()
+                else:
+                    case_expr = None
+
                 self._expect(Token.COLON)
-                self._parse_stmt_list()
-            if self._accept(Token.DEFAULT):
-                self._expect(Token.COLON)
-                self._parse_stmt_list()
-            while self._accept(Token.CASE):
-                self._parse_expr()
-                self._expect(Token.COLON)
-                self._parse_stmt_list()
+                case_body = self._parse_stmt_list()
+
+                if case_expr:
+                    cases.append(Case(case_expr, case_body))
+                elif default_case is None:
+                    default_case = Case(None, case_body)
+                else:
+                    self.raise_error(self.SyntaxError, 'Only one default case is permitted')
 
             self._expect(Token.RBRACE)
+
+            return Switch(cases, default_case)
 
         elif self._accept(Token.BREAK):
             self._expect(Token.SEMICOLON)
 
+            return Break()
+
         elif self._accept(Token.LBRACE):
-            self._parse_stmt_list()
+            stmts = self._parse_stmt_list()
             self._expect(Token.RBRACE)
 
-        elif self._try_parse_expr():
-            self._expect(Token.SEMICOLON)
+            return stmts
 
         else:
             expr = self._try_parse_expr()
@@ -143,7 +173,7 @@ class Parser:
     def _parse_expr(self, precedence=0):
         expr = self._try_parse_expr(precedence)
         if expr is None:
-            self.raise_syntax_error('Expected an expression')
+            self.raise_error(self.SyntaxError, 'Expected an expression')
         return expr
 
     def _try_parse_expr(self, precedence=0):
@@ -207,7 +237,10 @@ class Parser:
             factor = StaticCast(expr, dest_type)
 
         elif self._accept(Token.IDENTIFIER):
-            factor = Parameter(self._last_accepted_token.data)
+            var_name = self._last_accepted_token.data
+            if var_name not in self.variables:
+                self.raise_error(self.SemanticError, f'{var_name} is undeclared')
+            factor = Use(self.variables[var_name])
 
         elif self._accept(Token.NUMBER):
             factor = Immediate(self._last_accepted_token.data)
@@ -233,11 +266,11 @@ class Parser:
     def _expect(self, token_kind):
         token = self._accept(token_kind)
         if token is None:
-            self.raise_syntax_error(f'Expected a {Token.kind_to_str(token_kind)}')
+            self.raise_error(self.SyntaxError, f'Expected a {Token.kind_to_str(token_kind)}')
         return token
 
-    def raise_syntax_error(self, msg):
-        raise self.SyntaxError(f'{msg} in {self._current_token.location}')
+    def raise_error(self, error_class, msg):
+        raise error_class(f'{msg} in {self._current_token.location}')
 
 
 def main():

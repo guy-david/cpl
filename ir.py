@@ -2,43 +2,77 @@ class Type:
     pass
 
 class Integer(Type):
-    pass
+    def __str__(self):
+        return 'int'
 
 class Float(Type):
-    pass
+    def __str__(self):
+        return 'float'
+
+class Variable:
+    def __init__(self, name, type_class):
+        self.name = name
+        self.type_class = type_class
+
+    def __str__(self):
+        return f'<{self.name}:{self.type_class}>'
 
 class Statement:
     pass
 
-class While(Statement):
+class Break(Statement):
     pass
+
+class While(Statement):
+    def __init__(self, condition, body):
+        self.condition = condition
+        self.body = body
+
+class Case:
+    def __init__(self, const_expr, stmts):
+        self.const_expr = const_expr
+        self.stmts = stmts
 
 class Switch(Statement):
-    pass
+    def __init__(self, expr, cases, default_case=None):
+        self.condition = condition
+        self.cases = cases
+        self.default_case = default_case
 
 class Cond(Statement):
-    pass
+    def __init__(self, condition, true_case, false_case=None):
+        self.condition = condition
+        self.true_case = true_case
+        self.false_case = false_case
 
 class Input(Statement):
-    pass
+    def __init__(self, ident):
+        self.ident = ident
 
 class Output(Statement):
-    pass
+    def __init__(self, expr):
+        self.expr = expr
 
 class Value:
     pass
 
-class Parameter(Value):
-    def __init__(self, name):
-        self.name = name
+class Use(Value):
+    def __init__(self, variable):
+        self.variable = variable
+
+    def __str__(self):
+        return str(self.variable)
 
 class Immediate(Value):
     def __init__(self, value):
         self.value = value
 
+    def __str__(self):
+        return str(self.value)
+
 class Operator(Value):
     def __init__(self, *args):
-        operands = list(args)
+        self.operands = list(args)
 
 class UnaryOperator(Operator):
     pass
@@ -51,6 +85,12 @@ class StaticCast(UnaryOperator):
     def __init__(self, a, dest_type):
         super().__init__(a)
         self.dest_type = dest_type
+
+class UnaryAdd(UnaryOperator):
+    pass
+
+class Negate(UnaryOperator):
+    pass
 
 class Not(UnaryOperator):
     pass
@@ -80,20 +120,23 @@ class Or(BinaryOperator):
 class And(BinaryOperator):
     pass
 
-class Equal(BinaryOperator):
+class Compare(BinaryOperator):
     pass
 
-class NotEqual(BinaryOperator):
+class Equal(Compare):
     pass
 
-class Less(BinaryOperator):
+class NotEqual(Compare):
     pass
 
-class Greater(BinaryOperator):
+class Less(Compare):
     pass
 
-class LessOrEqual(BinaryOperator):
+class Greater(Compare):
     pass
 
-class GreaterOrEqual(BinaryOperator):
+class LessOrEqual(Compare):
+    pass
+
+class GreaterOrEqual(Compare):
     pass

@@ -133,92 +133,64 @@ class Parser:
             self._expect(Token.SEMICOLON)
 
         else:
-            return None
+            expr = self._try_parse_expr()
+            if expr is None:
+                return None
+            self._expect(Token.SEMICOLON)
 
-        return 1
+            return expr
 
-    def _parse_boolexpr(self):
-        self._parse_boolterm()
-        while True:
-            if self._accept(Token.OR):
-                pass
-            else:
-                break
-            self._parse_boolterm()
-
-    def _parse_boolterm(self):
-        self._parse_boolfactor()
-        while True:
-            if self._accept(Token.AND):
-                pass
-            else:
-                break
-            self._parse_boolfactor()
-
-    def _parse_boolfactor(self):
-        if self._accept(Token.NOT):
-            self._expect(Token.LPAREN)
-            self._parse_boolexpr()
-            self._expect(Token.RPAREN)
-        else:
-            self._parse_expr()
-            if self._accept(Token.EQUAL):
-                pass
-            elif self._accept(Token.NEQUAL):
-                pass
-            elif self._accept(Token.LESS):
-                pass
-            elif self._accept(Token.GREATER):
-                pass
-            elif self._accept(Token.EQLESS):
-                pass
-            elif self._accept(Token.EQGREATER):
-                pass
-            else:
-                self.raise_syntax_error('Expected a comparison operator')
-            self._parse_expr()
-
-    def _parse_expr(self):
-        expr = self._try_parse_expr()
+    def _parse_expr(self, precedence=0):
+        expr = self._try_parse_expr(precedence)
         if expr is None:
             self.raise_syntax_error('Expected an expression')
         return expr
 
-    def _try_parse_expr(self):
-        term = self._parse_term1()
-        while True:
-            if self._accept(Token.ASSIGN):
-                pass
-            else:
-                break
-            term = Assign(term, self._parse_term1())
-        return term
+    def _try_parse_expr(self, precedence=0):
+        ops = [
+            [(Token.ASSIGN, Assign)],
+            [(Token.OR, Or), ],
+            [(Token.AND, And), ],
+            [(Token.EQUAL, Equal), (Token.NEQUAL, NotEqual), ],
+            [(Token.LESS, Less), (Token.GREATER, Greater),
+             (Token.EQLESS, LessOrEqual), (Token.EQGREATER, GreaterOrEqual), ],
+            [(Token.PLUS, Add), (Token.MINUS, Sub), ],
+            [(Token.MULTIPLY, Mul), (Token.DIVIDE, Div), ],
 
-    def _parse_term1(self):
-        term = self._parse_term2()
-        while True:
-            if self._accept(Token.PLUS):
-                op = Add
-            elif self._accept(Token.MINUS):
-                op = Sub
-            else:
-                break
-            term = op(term, self._parse_term2())
-        return term
+            [(Token.PLUS, UnaryAdd),
+             (Token.MINUS, Negate),
+             (Token.NOT, Not), ]
+        ]
 
-    def _parse_term2(self):
-        term = self._parse_factor()
-        while True:
-            if self._accept(Token.MULTIPLY):
-                op = Mul
-            elif self._accept(Token.DIVIDE):
-                op = Div
-            else:
-                break
-            term = op(term, self._parse_factor())
-        return term
+        if precedence >= len(ops):
+            return self._try_parse_factor()
 
-    def _parse_factor(self):
+        for token, op in ops[precedence]:
+            if not issubclass(op, UnaryOperator):
+                continue
+            if self._accept(token):
+                term = self._try_parse_expr(precedence)
+                return op(term)
+
+        lhs = self._try_parse_expr(precedence + 1)
+        if lhs is None:
+            return None
+
+        while True:
+            found = False
+            for token, op in ops[precedence]:
+                if not issubclass(op, BinaryOperator):
+                    continue
+                if self._accept(token):
+                    rhs = self._parse_expr(precedence + 1)
+                    lhs = op(lhs, rhs)
+                    found = True
+            if not found:
+                break
+
+        return lhs
+
+    def _try_parse_factor(self):
         if self._accept(Token.LPAREN):
             factor = self._parse_expr()
             self._expect(Token.RPAREN)

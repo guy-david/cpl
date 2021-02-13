@@ -87,13 +87,19 @@ class StaticCast(UnaryOperator):
         self.dest_type = dest_type
 
 class UnaryAdd(UnaryOperator):
-    pass
+    @staticmethod
+    def compute(a):
+        return a
 
 class Negate(UnaryOperator):
-    pass
+    @staticmethod
+    def compute(a):
+        return -a
 
 class Not(UnaryOperator):
-    pass
+    @staticmethod
+    def compute(a):
+        return not a
 
 class BinaryOperator(Operator):
     def __init__(self, a, b):
@@ -103,40 +109,71 @@ class Assign(BinaryOperator):
     pass
 
 class Add(BinaryOperator):
-    pass
+    @staticmethod
+    def compute(a, b):
+        return a + b
 
 class Sub(BinaryOperator):
-    pass
+    @staticmethod
+    def compute(a, b):
+        return a - b
 
 class Mul(BinaryOperator):
-    pass
+    @staticmethod
+    def compute(a, b):
+        return a * b
 
 class Div(BinaryOperator):
-    pass
+    @staticmethod
+    def compute(a, b):
+        return a / b
 
 class Or(BinaryOperator):
-    pass
+    @staticmethod
+    def compute(a, b):
+        return a or b
+
+    def get_type(self):
+        return Integer
 
 class And(BinaryOperator):
-    pass
+    @staticmethod
+    def compute(a, b):
+        return a and b
+
+    def get_type(self):
+        return Integer
 
 class Compare(BinaryOperator):
-    pass
+    def get_type(self):
+        return Integer
 
 class Equal(Compare):
-    pass
+    @staticmethod
+    def compute(a, b):
+        return a == b
 
 class NotEqual(Compare):
-    pass
+    @staticmethod
+    def compute(a, b):
+        return a != b
 
 class Less(Compare):
-    pass
+    @staticmethod
+    def compute(a, b):
+        return a < b
 
 class Greater(Compare):
-    pass
+    @staticmethod
+    def compute(a, b):
+        return a > b
 
 class LessOrEqual(Compare):
-    pass
+    @staticmethod
+    def compute(a, b):
+        return a <= b
 
 class GreaterOrEqual(Compare):
-    pass
+    @staticmethod
+    def compute(a, b):
+        return a >= b

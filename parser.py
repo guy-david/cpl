@@ -263,8 +263,7 @@ class Parser:
         return token
 
     def raise_syntax_error(self, msg):
-        file_path, line, column = self._token.file_path, self._token.line, self._token.column
-        raise self.SyntaxError(f'{msg} in {file_path}:{line}:{column}')
+        raise self.SyntaxError(f'{msg} in {self._token.location}')
 
 
 def main():

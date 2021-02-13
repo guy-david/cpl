@@ -1,3 +1,13 @@
+class SourceLocation:
+    def __init__(self, file_path, line, column):
+        self.file_path = file_path
+        self.line = line
+        self.column = column
+
+    def __str__(self):
+        return f'{self.file_path}:{self.line}:{self.column}'
+
+
 class Token:
     # Keywords
     BREAK = 1
@@ -45,11 +55,9 @@ class Token:
 
     KIND_TO_STR = {}
 
-    def __init__(self, kind, file_path, line, column, data=None):
+    def __init__(self, kind, location, data=None):
         self.kind = kind
-        self.file_path = file_path
-        self.line = line
-        self.column = column
+        self.location = location
         self.data = data
 
     def __str__(self):

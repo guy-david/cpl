@@ -3,7 +3,7 @@
 import argparse
 
 import utils
-from tokens import Token
+from tokens import *
 
 
 class Lexer:
@@ -157,7 +157,7 @@ class Lexer:
                 return None
             self._raise_error(f'Did not expect \'{self._c}\'')
 
-        return Token(kind, self.stream.name, line, column, data)
+        return Token(kind, SourceLocation(self.stream.name, line, column), data)
 
     def _read_char(self):
         c = self.stream.read(1)

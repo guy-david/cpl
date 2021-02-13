@@ -66,6 +66,9 @@ class Lexer:
         self._c = ' '
 
     def tokens(self):
+        # Yield a dummy token to pipe initial source location
+        yield Token(Token.COMMENT, SourceLocation(self.stream.name, 1, 1))
+
         while not self.eof:
             token = self.next_token()
             if token is None:

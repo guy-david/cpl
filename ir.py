@@ -34,7 +34,7 @@ class Case:
         self.stmts = stmts
 
 class Switch(Statement):
-    def __init__(self, expr, cases, default_case=None):
+    def __init__(self, condition, cases, default_case=None):
         self.condition = condition
         self.cases = cases
         self.default_case = default_case
@@ -104,6 +104,14 @@ class StaticCast(UnaryOperator):
 
     def get_type(self):
         return self.dest_type
+
+    @staticmethod
+    def compute(a):
+        if self.dest_type == Integer:
+            return int(a)
+        if self.dest_type == Float:
+            return float(a)
+        assert False, 'INTERNAL ERROR'
 
 class UnaryAdd(UnaryOperator):
     @staticmethod
@@ -199,3 +207,11 @@ class GreaterOrEqual(Compare):
     @staticmethod
     def compute(a, b):
         return a >= b
+
+class ConstExprEval:
+    @staticmethod
+    def compute(expr):
+        if isinstance(expr, Immediate):
+            return expr.value
+        operands = [ConstExprEval.compute(op) for op in expr.operands]
+        return expr.compute(*operands)

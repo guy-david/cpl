@@ -138,6 +138,7 @@ class Parser:
                 parsing_case = self._last_accepted_token.kind == Token.CASE
                 if parsing_case:
                     case_expr = self._parse_expr()
+                    case_expr = ConstExprEval.compute(case_expr)
                 else:
                     case_expr = None
 

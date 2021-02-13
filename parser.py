@@ -138,7 +138,7 @@ class Parser:
                 parsing_case = self._last_accepted_token.kind == Token.CASE
                 if parsing_case:
                     case_expr = self._parse_expr()
-                    case_expr = ConstExprEval.compute(case_expr)
+                    case_expr = self.eval_const_expr(case_expr)
                 else:
                     case_expr = None
 
@@ -274,6 +274,14 @@ class Parser:
             rhs = StaticCast(rhs, Float)
 
         return lhs, rhs
+
+    def eval_const_expr(self, expr):
+        if isinstance(expr, Immediate):
+            return expr.value
+        if not isinstance(expr, Operator):
+            self.raise_error(self.SemanticError, f'Could not evaluate {expr} as part of a constant-expression')
+        operands = [self.eval_const_expr(op) for op in expr.operands]
+        return expr.compute(*operands)
 
     def _advance(self):
         self._current_token = self._lexer.next_token()

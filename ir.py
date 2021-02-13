@@ -207,11 +207,3 @@ class GreaterOrEqual(Compare):
     @staticmethod
     def compute(a, b):
         return a >= b
-
-class ConstExprEval:
-    @staticmethod
-    def compute(expr):
-        if isinstance(expr, Immediate):
-            return expr.value
-        operands = [ConstExprEval.compute(op) for op in expr.operands]
-        return expr.compute(*operands)

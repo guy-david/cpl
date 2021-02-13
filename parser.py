@@ -202,8 +202,8 @@ class Parser:
                 term = self._try_parse_expr(precedence)
                 return op(term)
 
-        lhs = self._try_parse_expr(precedence + 1)
-        if lhs is None:
+        term = self._try_parse_expr(precedence + 1)
+        if term is None:
             return None
 
         while True:
@@ -212,13 +212,15 @@ class Parser:
                 if not issubclass(op, BinaryOperator):
                     continue
                 if self._accept(token):
+                    lhs = term
                     rhs = self._parse_expr(precedence + 1)
-                    lhs = op(lhs, rhs)
+                    lhs, rhs = self._legalize_operands(lhs, rhs)
+                    term = op(lhs, rhs)
                     found = True
             if not found:
                 break
 
-        return lhs
+        return term
 
     def _try_parse_factor(self):
         if self._accept(Token.LPAREN):
@@ -249,6 +251,19 @@ class Parser:
             return None
 
         return factor
+
+    def _legalize_operands(self, lhs, rhs):
+        if lhs.get_type() == rhs.get_type():
+            return lhs, rhs
+
+        if lhs.get_type() == Integer:
+            if op is Assign:
+                self.raise_error(self.SemanticError, 'Cannot assign float value to a variable of type integer')
+            lhs = StaticCast(lhs, Float)
+        else:
+            rhs = StaticCast(rhs, Float)
+
+        return lhs, rhs
 
     def _advance(self):
         self._current_token = self._lexer.next_token()

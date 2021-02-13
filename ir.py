@@ -60,6 +60,9 @@ class Use(Value):
     def __init__(self, variable):
         self.variable = variable
 
+    def get_type(self):
+        return self.variable.type_class
+
     def __str__(self):
         return str(self.variable)
 
@@ -67,12 +70,25 @@ class Immediate(Value):
     def __init__(self, value):
         self.value = value
 
+    def get_type(self):
+        if type(self.value) is int:
+            return Integer
+        if type(self.value) is float:
+            return Float
+        assert False, 'INTERNAL ERROR'
+
     def __str__(self):
         return str(self.value)
 
 class Operator(Value):
     def __init__(self, *args):
         self.operands = list(args)
+
+    def get_type(self):
+        t = self.operands[0].get_type()
+        for op in self.operands[1:]:
+            assert t == op.get_type()
+        return t
 
 class UnaryOperator(Operator):
     pass
@@ -85,6 +101,9 @@ class StaticCast(UnaryOperator):
     def __init__(self, a, dest_type):
         super().__init__(a)
         self.dest_type = dest_type
+
+    def get_type(self):
+        return self.dest_type
 
 class UnaryAdd(UnaryOperator):
     @staticmethod
@@ -100,6 +119,9 @@ class Not(UnaryOperator):
     @staticmethod
     def compute(a):
         return not a
+
+    def get_type(self):
+        return Integer
 
 class BinaryOperator(Operator):
     def __init__(self, a, b):

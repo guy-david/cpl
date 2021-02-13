@@ -20,7 +20,8 @@ class Parser:
 
     def __init__(self, stream):
         self._lexer = Lexer(stream)
-        self._token = None
+        self._last_accepted_token = None
+        self._current_token = None
 
     def parse(self):
         self._advance()
@@ -234,10 +235,10 @@ class Parser:
             factor = StaticCast(expr, dest_type)
 
         elif self._accept(Token.IDENTIFIER):
-            factor = Parameter(self._token.data)
+            factor = Parameter(self._last_accepted_token.data)
 
         elif self._accept(Token.NUMBER):
-            factor = Immediate(self._token.data)
+            factor = Immediate(self._last_accepted_token.data)
 
         else:
             return None
@@ -245,14 +246,15 @@ class Parser:
         return factor
 
     def _advance(self):
-        self._token = self._lexer.next_token()
-        while self._token is not None and self._token.kind == Token.COMMENT:
-            self._token = self._lexer.next_token()
+        self._current_token = self._lexer.next_token()
+        while self._current_token is not None and self._current_token.kind == Token.COMMENT:
+            self._current_token = self._lexer.next_token()
 
     def _accept(self, token_kind):
         token = None
-        if self._token is not None and self._token.kind == token_kind:
-            token = self._token
+        if self._current_token is not None and self._current_token.kind == token_kind:
+            self._last_accepted_token = self._current_token
+            token = self._current_token
             self._advance()
         return token
 
@@ -263,7 +265,7 @@ class Parser:
         return token
 
     def raise_syntax_error(self, msg):
-        raise self.SyntaxError(f'{msg} in {self._token.location}')
+        raise self.SyntaxError(f'{msg} in {self._current_token.location}')
 
 
 def main():

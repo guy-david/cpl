@@ -25,6 +25,7 @@ class Parser:
         self._lexer = Lexer(stream)
         self._last_accepted_token = None
         self._current_token = None
+        self._breakable_scopes_depth = 0
 
     def parse(self):
         self._advance()
@@ -116,7 +117,10 @@ class Parser:
             self._expect(Token.LPAREN)
             condition = self._parse_expr()
             self._expect(Token.RPAREN)
+
+            self._breakable_scopes_depth += 1
             body = self._parse_stmt()
+            self._breakable_scopes_depth -= 1
 
             return While(condition, body)
 
@@ -138,7 +142,10 @@ class Parser:
                     case_expr = None
 
                 self._expect(Token.COLON)
+
+                self._breakable_scopes_depth += 1
                 case_body = self._parse_stmt_list()
+                self._breakable_scopes_depth -= 1
 
                 if case_expr:
                     cases.append(Case(case_expr, case_body))
@@ -152,6 +159,8 @@ class Parser:
             return Switch(cases, default_case)
 
         elif self._accept(Token.BREAK):
+            if self._breakable_scopes_depth == 0:
+                self.raise_error(self.SemanticError, 'break statement outside of while-loop or switch-case')
             self._expect(Token.SEMICOLON)
 
             return Break()

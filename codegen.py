@@ -20,7 +20,7 @@ class CodeGenerator:
         for stmt in stmts:
             self.emit(stmt)
 
-    def emit(self, stmt):
+    def emit(self, stmt, dest=None):
         result = None
         if isinstance(stmt, Immediate):
             result = stmt.value
@@ -28,17 +28,18 @@ class CodeGenerator:
             result = stmt.variable.name
         elif isinstance(stmt, UnaryOperator):
             arg = self.emit(stmt.operands[0])
-            result = self.gen_temp()
+            result = dest if dest is not None else self.gen_temp()
             print(f'{result} = {stmt.__class__.__name__} {arg}')
         elif isinstance(stmt, BinaryOperator):
             if isinstance(stmt, Assign):
                 result = self.emit(stmt.operands[0])
-                src = self.emit(stmt.operands[1])
-                print(f'{result} = {src}')
+                src = self.emit(stmt.operands[1], result)
+                if dest is not None:
+                    print(f'{dest} = {result}')
             else:
                 arg1 = self.emit(stmt.operands[0])
                 arg2 = self.emit(stmt.operands[1])
-                result = self.gen_temp()
+                result = dest if dest is not None else self.gen_temp()
                 print(f'{result} = {arg1} {stmt.__class__.__name__} {arg2}')
         return result
 

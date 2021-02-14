@@ -22,14 +22,24 @@ class CodeGenerator:
 
     def emit(self, stmt, dest=None):
         result = None
+
         if isinstance(stmt, Immediate):
             result = stmt.value
+            if dest is not None:
+                print(f'{dest} = {result}')
+                result = dest
+
         elif isinstance(stmt, Use):
             result = stmt.variable.name
+            if dest is not None:
+                print(f'{dest} = {result}')
+                result = dest
+
         elif isinstance(stmt, UnaryOperator):
             arg = self.emit(stmt.operands[0])
             result = dest if dest is not None else self.gen_temp()
             print(f'{result} = {stmt.__class__.__name__} {arg}')
+
         elif isinstance(stmt, BinaryOperator):
             if isinstance(stmt, Assign):
                 result = self.emit(stmt.operands[0])

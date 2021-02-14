@@ -149,6 +149,13 @@ class CodeGenerator:
             assert len(self._break_to_labels) > 0
             self.emit_jump(self._break_to_labels[-1])
 
+        elif isinstance(obj, Input):
+            print(f'input({obj.ident})')
+
+        elif isinstance(obj, Output):
+            result = self.emit(obj.expr)
+            print(f'output({result})')
+
         elif isinstance(obj, int) or isinstance(obj, float) or isinstance(obj, str):
             return obj
 

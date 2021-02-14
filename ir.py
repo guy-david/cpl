@@ -29,15 +29,14 @@ class While(Statement):
         self.body = body
 
 class Case:
-    def __init__(self, const_expr, stmts):
-        self.const_expr = const_expr
+    def __init__(self, stmts, value):
         self.stmts = stmts
+        self.value = value
 
 class Switch(Statement):
-    def __init__(self, condition, cases, default_case=None):
-        self.condition = condition
+    def __init__(self, value, cases):
+        self.value = value
         self.cases = cases
-        self.default_case = default_case
 
 class Conditional(Statement):
     def __init__(self, condition, true_case, false_case=None):

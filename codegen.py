@@ -106,6 +106,35 @@ class CodeGenerator:
             self.emit_conditional_branch(cond_result, body_label, end_label)
             self.emit_label(end_label)
 
+        elif isinstance(obj, Switch):
+            value = self.emit(obj.value)
+
+            case_test_labels = []
+            case_body_labels = []
+            for _ in range(len(obj.cases)):
+                case_test_labels.append(self.gen_label())
+                case_body_labels.append(self.gen_label())
+
+            end_label = self.gen_label()
+
+            for i, case in enumerate(obj.cases):
+                if i > 0:
+                    self.emit_label(case_test_labels[i])
+                next_label = case_test_labels[i + 1] if i + 1 < len(case_test_labels) else end_label
+                case_value = self.emit(case.value)
+                test_result = self.emit(Equal(value, case_value))
+                self.emit_conditional_branch(test_result, case_body_labels[i], next_label)
+                self.emit_label(case_body_labels[i])
+                self.emit(case.stmts)
+
+            self.emit_label(end_label)
+
+        elif isinstance(obj, Break):
+            print('break')
+
+        elif isinstance(obj, int) or isinstance(obj, float) or isinstance(obj, str):
+            return obj
+
         else:
             raise self.Error(f'Missing implemenation for generation of {obj}')
 

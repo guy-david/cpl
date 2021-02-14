@@ -126,21 +126,24 @@ class Parser:
 
         elif self._accept(Token.SWITCH):
             self._expect(Token.LPAREN)
-            self._parse_expr()
+            expr = self._parse_expr()
             self._expect(Token.RPAREN)
 
             self._expect(Token.LBRACE)
 
             cases = []
-            default_case = None
+            has_default_case = False
 
             while self._accept(Token.CASE) or self._accept(Token.DEFAULT):
                 parsing_case = self._last_accepted_token.kind == Token.CASE
                 if parsing_case:
                     case_expr = self._parse_expr()
-                    case_expr = self.eval_const_expr(case_expr)
-                else:
+                    case_expr = Immediate(self.eval_const_expr(case_expr))
+                elif not has_default_case:
                     case_expr = None
+                    has_default_case = True
+                else:
+                    self.raise_error(self.SyntaxError, 'Only one default case is permitted')
 
                 self._expect(Token.COLON)
 
@@ -148,16 +151,11 @@ class Parser:
                 case_body = self._parse_stmt_list()
                 self._breakable_scopes_depth -= 1
 
-                if case_expr:
-                    cases.append(Case(case_expr, case_body))
-                elif default_case is None:
-                    default_case = Case(None, case_body)
-                else:
-                    self.raise_error(self.SyntaxError, 'Only one default case is permitted')
+                cases.append(Case(case_body, case_expr))
 
             self._expect(Token.RBRACE)
 
-            return Switch(cases, default_case)
+            return Switch(expr, cases)
 
         elif self._accept(Token.BREAK):
             if self._breakable_scopes_depth == 0:

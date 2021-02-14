@@ -33,8 +33,8 @@ class CodeGenerator:
     def emit_jump(self, label):
         print(f'jump {label}')
 
-    def emit_conditional_jump(self, condition, true_label, false_label):
-        print(f'jump {condition}, {true_label}, {false_label}')
+    def emit_conditional_branch(self, condition, true_label, false_label):
+        print(f'branch {condition}, {true_label}, {false_label}')
 
     def emit(self, obj, dest=None):
         result = None
@@ -82,7 +82,7 @@ class CodeGenerator:
                 end_label = self.gen_label()
                 false_label = end_label
 
-            self.emit_conditional_jump(cond_result, true_label, false_label)
+            self.emit_conditional_branch(cond_result, true_label, false_label)
             self.emit_label(true_label)
             self.emit(obj.true_case)
 
@@ -93,8 +93,21 @@ class CodeGenerator:
 
             self.emit_label(end_label)
 
+        elif isinstance(obj, While):
+            test_label = self.gen_label()
+            body_label = self.gen_label()
+            end_label = self.gen_label()
+
+            self.emit_jump(test_label)
+            self.emit_label(body_label)
+            self.emit(obj.body)
+            self.emit_label(test_label)
+            cond_result = self.emit(obj.condition)
+            self.emit_conditional_branch(cond_result, body_label, end_label)
+            self.emit_label(end_label)
+
         else:
-            raise self.Error(f'Failed to generate {obj}')
+            raise self.Error(f'Missing implemenation for generation of {obj}')
 
         return result
 

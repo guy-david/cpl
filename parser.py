@@ -29,11 +29,11 @@ class Parser:
 
     def parse(self):
         self._advance()
-        self._parse_program()
+        return self._parse_program()
 
     def _parse_program(self):
         self.variables = self._parse_declarations()
-        self.stmts = self._parse_stmt_block()
+        return self._parse_stmt_block()
 
     def _parse_declarations(self):
         variables = {}
@@ -95,7 +95,7 @@ class Parser:
             if self._accept(Token.ELSE):
                 false_case = self._parse_stmt()
 
-            return Cond(condition, true_case, false_case)
+            return Conditional(condition, true_case, false_case)
 
         elif self._accept(Token.INPUT):
             self._expect(Token.LPAREN)

@@ -8,49 +8,94 @@ from ir import *
 
 
 class CodeGenerator:
+
+    class Error(Exception):
+        pass
+
     def __init__(self):
         self._t = 0
+        self._l = 0
+
+    def gen(self, stmts):
+        self.emit(stmts)
 
     def gen_temp(self):
         self._t += 1
         return f't{self._t}'
 
-    def gen(self, variables, stmts):
-        t = 0
-        for stmt in stmts:
-            self.emit(stmt)
+    def gen_label(self):
+        self._l += 1
+        return f'L{self._l}'
 
-    def emit(self, stmt, dest=None):
+    def emit_label(self, label):
+        print(f'{label}:')
+
+    def emit_jump(self, label):
+        print(f'jump {label}')
+
+    def emit_conditional_jump(self, condition, true_label, false_label):
+        print(f'jump {condition}, {true_label}, {false_label}')
+
+    def emit(self, obj, dest=None):
         result = None
 
-        if isinstance(stmt, Immediate):
-            result = stmt.value
+        if isinstance(obj, list):
+            for o in obj:
+                self.emit(o)
+
+        elif isinstance(obj, Immediate):
+            result = obj.value
             if dest is not None:
                 print(f'{dest} = {result}')
                 result = dest
 
-        elif isinstance(stmt, Use):
-            result = stmt.variable.name
+        elif isinstance(obj, Use):
+            result = obj.variable.name
             if dest is not None:
                 print(f'{dest} = {result}')
                 result = dest
 
-        elif isinstance(stmt, UnaryOperator):
-            arg = self.emit(stmt.operands[0])
+        elif isinstance(obj, UnaryOperator):
+            arg = self.emit(obj.operands[0])
             result = dest if dest is not None else self.gen_temp()
-            print(f'{result} = {stmt.__class__.__name__} {arg}')
+            print(f'{result} = {obj.__class__.__name__} {arg}')
 
-        elif isinstance(stmt, BinaryOperator):
-            if isinstance(stmt, Assign):
-                result = self.emit(stmt.operands[0])
-                src = self.emit(stmt.operands[1], result)
+        elif isinstance(obj, BinaryOperator):
+            if isinstance(obj, Assign):
+                result = self.emit(obj.operands[0])
+                src = self.emit(obj.operands[1], result)
                 if dest is not None:
                     print(f'{dest} = {result}')
             else:
-                arg1 = self.emit(stmt.operands[0])
-                arg2 = self.emit(stmt.operands[1])
+                arg1 = self.emit(obj.operands[0])
+                arg2 = self.emit(obj.operands[1])
                 result = dest if dest is not None else self.gen_temp()
-                print(f'{result} = {arg1} {stmt.__class__.__name__} {arg2}')
+                print(f'{result} = {arg1} {obj.__class__.__name__} {arg2}')
+
+        elif isinstance(obj, Conditional):
+            cond_result = self.emit(obj.condition)
+            true_label = self.gen_label()
+            if obj.false_case is not None:
+                false_label = self.gen_label()
+                end_label = self.gen_label()
+            else:
+                end_label = self.gen_label()
+                false_label = end_label
+
+            self.emit_conditional_jump(cond_result, true_label, false_label)
+            self.emit_label(true_label)
+            self.emit(obj.true_case)
+
+            if obj.false_case is not None:
+                self.emit_jump(end_label)
+                self.emit_label(false_label)
+                self.emit(obj.false_case)
+
+            self.emit_label(end_label)
+
+        else:
+            raise self.Error(f'Failed to generate {obj}')
+
         return result
 
 
@@ -64,10 +109,10 @@ def main():
         for input_path in args.input_file:
             with utils.smart_open(input_path, 'r') as input_file:
                 parser = Parser(input_file)
-                parser.parse()
+                stmts = parser.parse()
 
                 code_gen = CodeGenerator()
-                code_gen.gen(parser.variables, parser.stmts)
+                code_gen.gen(stmts)
 
 
 if __name__ == '__main__':

@@ -39,7 +39,7 @@ class Switch(Statement):
         self.cases = cases
         self.default_case = default_case
 
-class Cond(Statement):
+class Conditional(Statement):
     def __init__(self, condition, true_case, false_case=None):
         self.condition = condition
         self.true_case = true_case

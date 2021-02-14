@@ -98,7 +98,6 @@ class CodeGenerator:
             test_label = self.gen_label()
             body_label = self.gen_label()
             end_label = self.gen_label()
-
             self._break_to_labels.append(end_label)
 
             self.emit_jump(test_label)
@@ -112,23 +111,35 @@ class CodeGenerator:
         elif isinstance(obj, Switch):
             value = self.emit(obj.value)
 
+            default_case_index = None
             case_test_labels = []
-            case_body_labels = []
-            for _ in range(len(obj.cases)):
+            for i, case in enumerate(obj.cases):
+                if case.value is not None:
+                    case_test_labels.append(self.gen_label())
+                else:
+                    default_case_index = i
+            if default_case_index is not None:
                 case_test_labels.append(self.gen_label())
-                case_body_labels.append(self.gen_label())
+
+            case_body_labels = [self.gen_label() for _ in obj.cases]
 
             end_label = self.gen_label()
-
             self._break_to_labels.append(end_label)
 
             for i, case in enumerate(obj.cases):
                 if i > 0:
                     self.emit_label(case_test_labels[i])
+                if i == default_case_index:
+                    continue
                 next_label = case_test_labels[i + 1] if i + 1 < len(case_test_labels) else end_label
                 case_value = self.emit(case.value)
                 test_result = self.emit(Equal(value, case_value))
                 self.emit_conditional_branch(test_result, case_body_labels[i], next_label)
+
+            if default_case_index is not None:
+                self.emit_jump(case_body_labels[default_case_index])
+
+            for i, case in enumerate(obj.cases):
                 self.emit_label(case_body_labels[i])
                 self.emit(case.stmts)
 

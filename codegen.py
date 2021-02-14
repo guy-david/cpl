@@ -15,6 +15,7 @@ class CodeGenerator:
     def __init__(self):
         self._t = 0
         self._l = 0
+        self._break_to_labels = []
 
     def gen(self, stmts):
         self.emit(stmts)
@@ -98,6 +99,8 @@ class CodeGenerator:
             body_label = self.gen_label()
             end_label = self.gen_label()
 
+            self._break_to_labels.append(end_label)
+
             self.emit_jump(test_label)
             self.emit_label(body_label)
             self.emit(obj.body)
@@ -117,6 +120,8 @@ class CodeGenerator:
 
             end_label = self.gen_label()
 
+            self._break_to_labels.append(end_label)
+
             for i, case in enumerate(obj.cases):
                 if i > 0:
                     self.emit_label(case_test_labels[i])
@@ -130,7 +135,8 @@ class CodeGenerator:
             self.emit_label(end_label)
 
         elif isinstance(obj, Break):
-            print('break')
+            assert len(self._break_to_labels) > 0
+            self.emit_jump(self._break_to_labels[-1])
 
         elif isinstance(obj, int) or isinstance(obj, float) or isinstance(obj, str):
             return obj

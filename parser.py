@@ -187,6 +187,7 @@ class Parser:
         return expr
 
     def _try_parse_expr(self, precedence=0):
+        right_associative_ops = [Assign]
         ops = [
             [(Token.ASSIGN, Assign)],
             [(Token.OR, Or), ],
@@ -221,10 +222,15 @@ class Parser:
             for token, op in ops[precedence]:
                 if not issubclass(op, BinaryOperator):
                     continue
+
                 if self._accept(token):
                     lhs = term
-                    rhs = self._parse_expr(precedence + 1)
-                    lhs, rhs = self._legalize_operands(lhs, rhs)
+                    if op in right_associative_ops:
+                        rhs = self._parse_expr(precedence)
+                    else:
+                        rhs = self._parse_expr(precedence + 1)
+
+                    lhs, rhs = self._create_implicit_casts(lhs, rhs)
                     term = op(lhs, rhs)
                     found = True
             if not found:
@@ -262,7 +268,7 @@ class Parser:
 
         return factor
 
-    def _legalize_operands(self, lhs, rhs):
+    def _create_implicit_casts(self, lhs, rhs):
         if lhs.get_type() == rhs.get_type():
             return lhs, rhs
 

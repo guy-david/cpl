@@ -20,10 +20,6 @@ class Variable:
 class Statement:
     pass
 
-class Halt(Statement):
-    def __init__(self):
-        pass
-
 class Break(Statement):
     pass
 
@@ -210,3 +206,15 @@ class GreaterOrEqual(Compare):
     @staticmethod
     def compute(a, b):
         return a >= b
+
+
+# CodeGen statements
+
+class Halt(Statement):
+    pass
+
+class Jump(Statement):
+    pass
+
+class CondBr(Statement):
+    pass

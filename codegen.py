@@ -38,6 +38,8 @@ class CodeGenerator:
 
         self._select_instructions()
 
+        # self._map_labels()
+
         for bb in self._basic_blocks:
             if bb.label is not None:
                 print(f'{bb.label}:')
@@ -84,15 +86,16 @@ class CodeGenerator:
         self._basic_blocks[-1].label = label
 
     def _emit_jump(self, label):
-        self._add_instr(f'jump {label}')
+        self._add_instr([Jump, Integer, label])
         self._init_new_bb()
 
     def _emit_conditional_branch(self, condition, true_label, false_label):
-        self._add_instr(f'branch {condition}, {true_label}, {false_label}')
+        self._add_instr([CondBr, Integer, condition, true_label, false_label])
         self._init_new_bb()
 
     def _emit(self, obj, dest=None):
         result = None
+        result_type = None
 
         if isinstance(obj, list):
             for o in obj:
@@ -100,35 +103,39 @@ class CodeGenerator:
 
         elif isinstance(obj, Immediate):
             result = obj.value
+            result_type = obj.get_type()
             if dest is not None:
-                self._add_instr([Assign(), dest, result])
+                self._add_instr([Assign, result_type, dest, result])
                 result = dest
 
         elif isinstance(obj, Use):
             result = obj.variable.name
+            result_type = obj.variable.type_class
             if dest is not None:
-                self._add_instr([Assign(), dest, result])
+                self._add_instr([Assign, result_type, dest, result])
                 result = dest
 
         elif isinstance(obj, UnaryOperator):
-            arg = self._emit(obj.operands[0])
+            arg, result_type = self._emit(obj.operands[0])
             result = dest if dest is not None else self._gen_temp()
-            self._add_instr([obj, result, arg])
+            self._add_instr([type(obj), result_type, result, arg])
 
         elif isinstance(obj, BinaryOperator):
             if isinstance(obj, Assign):
-                result = self._emit(obj.operands[0])
-                src = self._emit(obj.operands[1], result)
+                result, result_type = self._emit(obj.operands[0])
+                self._emit(obj.operands[1], result)
                 if dest is not None:
-                    self._add_instr([Assign(), dest, result])
+                    self._add_instr([Assign, result_type, dest, result])
             else:
-                arg1 = self._emit(obj.operands[0])
-                arg2 = self._emit(obj.operands[1])
+                arg1, arg1_type = self._emit(obj.operands[0])
+                arg2, arg2_type = self._emit(obj.operands[1])
                 result = dest if dest is not None else self._gen_temp()
-                self._add_instr([obj, result, arg1, arg2])
+                assert arg1_type is arg2_type
+                result_type = arg1_type
+                self._add_instr([type(obj), result_type, result, arg1, arg2])
 
         elif isinstance(obj, Conditional):
-            cond_result = self._emit(obj.condition)
+            cond_result, _ = self._emit(obj.condition)
             true_label = self._gen_label()
             if obj.false_case is not None:
                 false_label = self._gen_label()
@@ -204,14 +211,14 @@ class CodeGenerator:
             self._emit_jump(self._break_to_labels[-1])
 
         elif isinstance(obj, Input):
-            self._add_instr([obj, obj.variable])
+            self._add_instr([Input, obj.variable.type_class, obj.variable.name])
 
         elif isinstance(obj, Output):
-            result = self._emit(obj.expr)
-            self._add_instr([obj, result])
+            result, result_type = self._emit(obj.expr)
+            self._add_instr([Output, result_type, result])
 
         elif isinstance(obj, Halt):
-            self._add_instr(obj)
+            self._add_instr([Halt, Integer])
 
         elif isinstance(obj, int) or isinstance(obj, float) or isinstance(obj, str):
             return obj
@@ -219,7 +226,7 @@ class CodeGenerator:
         else:
             raise self.Error(f'Missing implemenation for generation of {obj}')
 
-        return result
+        return result, result_type
 
 
 def main():

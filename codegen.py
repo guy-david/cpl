@@ -5,6 +5,7 @@ import argparse
 import utils
 from parser import Parser
 from ir import *
+from quad import *
 
 
 class BasicBlock:
@@ -35,11 +36,23 @@ class CodeGenerator:
 
         self._remove_empty_basic_blocks()
 
+        self._select_instructions()
+
         for bb in self._basic_blocks:
             if bb.label is not None:
                 print(f'{bb.label}:')
             for instr in bb.instructions:
                 print(instr)
+
+    def _select_instructions(self):
+        if self._backend_name == 'quad':
+            backend = Quad
+        else:
+            raise self.Error(f'Unsupported back-end \'{self._backend_name}\'')
+
+        for bb in self._basic_blocks:
+            for i in range(len(bb.instructions)):
+                bb.instructions[i] = backend.map_instruction(bb.instructions[i])
 
     def _init_new_bb(self):
         bb = BasicBlock(len(self._basic_blocks))
@@ -88,31 +101,31 @@ class CodeGenerator:
         elif isinstance(obj, Immediate):
             result = obj.value
             if dest is not None:
-                self._add_instr(f'{dest} = {result}')
+                self._add_instr([Assign(), dest, result])
                 result = dest
 
         elif isinstance(obj, Use):
             result = obj.variable.name
             if dest is not None:
-                self._add_instr(f'{dest} = {result}')
+                self._add_instr([Assign(), dest, result])
                 result = dest
 
         elif isinstance(obj, UnaryOperator):
             arg = self._emit(obj.operands[0])
             result = dest if dest is not None else self._gen_temp()
-            self._add_instr(f'{result} = {obj.__class__.__name__} {arg}')
+            self._add_instr([obj, result, arg])
 
         elif isinstance(obj, BinaryOperator):
             if isinstance(obj, Assign):
                 result = self._emit(obj.operands[0])
                 src = self._emit(obj.operands[1], result)
                 if dest is not None:
-                    self._add_instr(f'{dest} = {result}')
+                    self._add_instr([Assign(), dest, result])
             else:
                 arg1 = self._emit(obj.operands[0])
                 arg2 = self._emit(obj.operands[1])
                 result = dest if dest is not None else self._gen_temp()
-                self._add_instr(f'{result} = {arg1} {obj.__class__.__name__} {arg2}')
+                self._add_instr([obj, result, arg1, arg2])
 
         elif isinstance(obj, Conditional):
             cond_result = self._emit(obj.condition)
@@ -191,10 +204,11 @@ class CodeGenerator:
             self._emit_jump(self._break_to_labels[-1])
 
         elif isinstance(obj, Input):
-            self._add_instr(f'input({obj.variable.name})')
+            self._add_instr([obj, obj.variable])
 
         elif isinstance(obj, Output):
             result = self._emit(obj.expr)
+            self._add_instr([obj, result])
 
         elif isinstance(obj, Halt):
             self._add_instr(obj)

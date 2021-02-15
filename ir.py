@@ -45,8 +45,8 @@ class Conditional(Statement):
         self.false_case = false_case
 
 class Input(Statement):
-    def __init__(self, ident):
-        self.ident = ident
+    def __init__(self, variable):
+        self.variable = variable
 
 class Output(Statement):
     def __init__(self, expr):

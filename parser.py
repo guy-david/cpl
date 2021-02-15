@@ -99,11 +99,14 @@ class Parser:
 
         elif self._accept(Token.INPUT):
             self._expect(Token.LPAREN)
-            ident = self._expect(Token.IDENTIFIER)
+            ident = self._expect(Token.IDENTIFIER).data
             self._expect(Token.RPAREN)
             self._expect(Token.SEMICOLON)
 
-            return Input(ident)
+            if ident not in self.variables:
+                self.raise_error(self.SemanticError, f'{ident} is undeclared')
+
+            return Input(self.variables[ident])
 
         elif self._accept(Token.OUTPUT):
             self._expect(Token.LPAREN)

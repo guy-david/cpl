@@ -151,7 +151,7 @@ class CodeGenerator:
             self._emit_jump(self._break_to_labels[-1])
 
         elif isinstance(obj, Input):
-            print(f'input({obj.ident})')
+            print(f'input({obj.variable.name})')
 
         elif isinstance(obj, Output):
             result = self._emit(obj.expr)

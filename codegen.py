@@ -23,15 +23,19 @@ class CodeGenerator:
         self._t = 0
         self._l = 0
         self._break_to_labels = []
-        self._backend_name = backend_name
+        self._backend_name = backend_name.lower()
         self._basic_blocks = []
         self._init_new_bb()
         self._label_to_bb = {}
 
     def gen(self, stmts):
+        # Emit IR instructions and labels into a list of basic-blocks
         self._emit(stmts)
+        self._emit(Halt())
+
+        self._remove_empty_basic_blocks()
+
         for bb in self._basic_blocks:
-            if len(bb.instructions) > 0:
             if bb.label is not None:
                 print(f'{bb.label}:')
             for instr in bb.instructions:
@@ -40,6 +44,16 @@ class CodeGenerator:
     def _init_new_bb(self):
         bb = BasicBlock(len(self._basic_blocks))
         self._basic_blocks.append(bb)
+
+    def _remove_empty_basic_blocks(self):
+        for i in range(len(self._basic_blocks) - 1, -1, -1):
+            bb = self._basic_blocks[i]
+            if len(bb.instructions) > 0:
+                continue
+            if bb.label is not None:
+                next_bb = self._basic_blocks[i + 1]
+                self._label_to_bb[bb.label] = self._label_to_bb[next_bb.label]
+            self._basic_blocks.pop(i)
 
     def _add_instr(self, instr):
         self._basic_blocks[-1].instructions.append(instr)

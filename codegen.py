@@ -181,7 +181,9 @@ class CodeGenerator:
 
         elif isinstance(obj, Output):
             result = self._emit(obj.expr)
-            self._add_instr(f'output({result})')
+
+        elif isinstance(obj, Halt):
+            self._add_instr(obj)
 
         elif isinstance(obj, int) or isinstance(obj, float) or isinstance(obj, str):
             return obj

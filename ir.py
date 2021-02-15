@@ -20,6 +20,10 @@ class Variable:
 class Statement:
     pass
 
+class Halt(Statement):
+    def __init__(self):
+        pass
+
 class Break(Statement):
     pass
 

@@ -190,12 +190,12 @@ class CodeGenerator:
             self._emit_label(body_label)
             self._emit(obj.body)
             self._emit_label(test_label)
-            cond_result = self._emit(obj.condition)
+            cond_result, _ = self._emit(obj.condition)
             self._emit_conditional_branch(cond_result, body_label, end_label)
             self._emit_label(end_label)
 
         elif isinstance(obj, Switch):
-            value = self._emit(obj.value)
+            value, _ = self._emit(obj.value)
 
             default_case_index = None
             case_test_labels = []
@@ -218,8 +218,8 @@ class CodeGenerator:
                 if i == default_case_index:
                     continue
                 next_label = case_test_labels[i + 1] if i + 1 < len(case_test_labels) else end_label
-                case_value = self._emit(case.value)
-                test_result = self._emit(Equal(value, case_value))
+                case_value, _ = self._emit(case.value)
+                test_result, _ = self._emit(Equal(value, case_value))
                 self._emit_conditional_branch(test_result, case_body_labels[i], next_label)
 
             if default_case_index is not None:

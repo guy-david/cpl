@@ -1,12 +1,5 @@
-#!/usr/bin/env python3
-
 import re
-import argparse
-
-import utils
-from parser import Parser
 from ir import *
-from quad import *
 
 
 class Value:
@@ -61,7 +54,7 @@ class CodeGenerator:
 
     def _select_instructions(self):
         if self._backend_name == 'quad':
-            backend = Quad
+            from quad import Quad as backend
         else:
             raise self.Error(f'Unsupported back-end \'{self._backend_name}\'')
 

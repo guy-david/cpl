@@ -1,8 +1,3 @@
-#!/usr/bin/env python3
-
-import argparse
-
-import utils
 from tokens import *
 
 
@@ -174,21 +169,3 @@ class Lexer:
 
     def _raise_error(self, msg):
         raise self.Error(f'{msg} in {self.stream.name}:{self.line}:{self.column}')
-
-
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('input_file', nargs='+', help='Input files')
-    parser.add_argument('-o', '--output-file', default='-', help='Output path')
-    args = parser.parse_args()
-
-    with utils.smart_open(args.output_file, 'w') as output_file:
-        for input_path in args.input_file:
-            with utils.smart_open(input_path, 'r') as input_file:
-                lexer = Lexer(input_file)
-                for token in lexer.tokens():
-                    output_file.write(f'{token}\n')
-
-
-if __name__ == '__main__':
-    main()

@@ -142,6 +142,8 @@ class Parser:
                 if parsing_case:
                     case_expr = self._parse_expr()
                     case_expr = Immediate(self.eval_const_expr(case_expr))
+                    if case_expr.get_type() is not expr.get_type():
+                        self.raise_error(self.SemanticError, 'Switch argument and cases must all be of the same type')
                 elif not has_default_case:
                     case_expr = None
                     has_default_case = True

@@ -199,12 +199,12 @@ class CodeGenerator:
             end_label = self._gen_label()
             self._break_to_labels.append(end_label)
 
-            self._emit_jump(test_label)
-            self._emit_label(body_label)
-            self._emit(obj.body)
             self._emit_label(test_label)
             cond_result = self._emit(obj.condition)
             self._emit_conditional_branch(cond_result, body_label, end_label)
+            self._emit_label(body_label)
+            self._emit(obj.body)
+            self._emit_jump(test_label)
             self._emit_label(end_label)
 
         elif isinstance(obj, Switch):

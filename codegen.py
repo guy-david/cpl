@@ -230,10 +230,10 @@ class CodeGenerator:
                     self._emit_label(case_test_labels[i])
                 if i == default_case_index:
                     continue
-                next_label = case_test_labels[i + 1] if i + 1 < len(case_test_labels) else end_label
+                next_test_label = case_test_labels[i + 1] if i + 1 < len(case_test_labels) else end_label
                 case_value = self._emit(case.value)
-                test_result = self._emit(Equal(value, case_value))
-                self._emit_conditional_branch(test_result, case_body_labels[i], next_label)
+                test_result = self._emit(NotEqual(value, case_value))
+                self._emit_conditional_branch(test_result, next_test_label, case_body_labels[i])
 
             if default_case_index is not None:
                 self._emit_jump(case_body_labels[default_case_index])

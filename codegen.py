@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import re
 import argparse
 
 import utils
@@ -11,8 +12,9 @@ from quad import *
 class BasicBlock:
     def __init__(self, id_num):
         self.id_num = id_num
-        self.instructions = []
         self.label = None
+        self.address = None
+        self.instructions = []
 
 
 class CodeGenerator:
@@ -32,19 +34,23 @@ class CodeGenerator:
     def gen(self, stmts):
         # Emit IR instructions and labels into a list of basic-blocks
         self._emit(stmts)
+        # Program must end with a HALT instruction
         self._emit(Halt())
 
         self._remove_empty_basic_blocks()
-
         self._select_instructions()
+        self._translate_labels()
+        self._print_instructions()
 
-        # self._map_labels()
-
-        for bb in self._basic_blocks:
+    def _remove_empty_basic_blocks(self):
+        for i in range(len(self._basic_blocks) - 1, -1, -1):
+            bb = self._basic_blocks[i]
+            if len(bb.instructions) > 0:
+                continue
             if bb.label is not None:
-                print(f'{bb.label}:')
-            for instr in bb.instructions:
-                print(instr)
+                next_bb = self._basic_blocks[i + 1]
+                self._label_to_bb[bb.label] = self._label_to_bb[next_bb.label]
+            self._basic_blocks.pop(i)
 
     def _select_instructions(self):
         if self._backend_name == 'quad':
@@ -56,19 +62,34 @@ class CodeGenerator:
             for i in range(len(bb.instructions)):
                 bb.instructions[i] = backend.map_instruction(bb.instructions[i])
 
+    def _translate_labels(self):
+        # Compute starting address for each basic-block
+        current_address = 1
+        for bb in self._basic_blocks:
+            bb.address = current_address
+            bb.label = None
+            for instr in bb.instructions:
+                current_address += 1
+
+        for bb in self._basic_blocks:
+            for i, instr in enumerate(bb.instructions):
+                unresolved_labels = re.findall(r'<(\w+)>', instr)
+                resolved_labels = []
+                for label in unresolved_labels:
+                    dest_bb_address = self._label_to_bb[label].address
+                    resolved_labels.append(dest_bb_address)
+                resolved_instr = re.sub(r'<(\w+)>', '{}', instr).format(*resolved_labels)
+                bb.instructions[i] = resolved_instr
+
+    def _print_instructions(self):
+        for bb in self._basic_blocks:
+            assert bb.label is None
+            for instr in bb.instructions:
+                print(instr)
+
     def _init_new_bb(self):
         bb = BasicBlock(len(self._basic_blocks))
         self._basic_blocks.append(bb)
-
-    def _remove_empty_basic_blocks(self):
-        for i in range(len(self._basic_blocks) - 1, -1, -1):
-            bb = self._basic_blocks[i]
-            if len(bb.instructions) > 0:
-                continue
-            if bb.label is not None:
-                next_bb = self._basic_blocks[i + 1]
-                self._label_to_bb[bb.label] = self._label_to_bb[next_bb.label]
-            self._basic_blocks.pop(i)
 
     def _add_instr(self, instr):
         self._basic_blocks[-1].instructions.append(instr)
@@ -83,7 +104,9 @@ class CodeGenerator:
 
     def _emit_label(self, label):
         self._init_new_bb()
-        self._basic_blocks[-1].label = label
+        bb = self._basic_blocks[-1]
+        bb.label = label
+        self._label_to_bb[label] = bb
 
     def _emit_jump(self, label):
         self._add_instr([Jump, Integer, label])

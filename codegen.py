@@ -59,8 +59,10 @@ class CodeGenerator:
             raise self.Error(f'Unsupported back-end \'{self._backend_name}\'')
 
         for bb in self._basic_blocks:
-            for i in range(len(bb.instructions)):
-                bb.instructions[i] = backend.map_instruction(bb.instructions[i])
+            backend_instrs = []
+            for ir_instr in bb.instructions:
+                backend_instrs += backend.map_instruction(ir_instr)
+            bb.instructions = backend_instrs
 
     def _translate_labels(self):
         # Compute starting address for each basic-block

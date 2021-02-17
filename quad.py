@@ -126,9 +126,9 @@ class Quad:
             instrs = [f'JUMP <{label}>']
 
         elif opcode is CondBr:
-            # Assumes the instructions of the true condition follow the JMPZ instruction
-            test_result, _, false_label = rest
-            instrs = [f'JMPZ <{false_label}> {test_result}']
+            test_result, true_label, false_label = rest
+            instrs = [f'JMPZ <{false_label}> {test_result}',
+                      f'JUMP <{true_label}>']
 
         elif opcode is Halt:
             instrs = ['HALT']

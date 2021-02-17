@@ -133,4 +133,96 @@ HALT
 
 </td>
     </tr>
+    <tr>
+<td>
+
+```c
+/*
+ * Simple Calculator
+ * Accepts two floats and outputs a float if successful.
+ * On error, the output is an integer. Error values:
+ *     1: Invalid operation
+ *     2: Division by zero
+ */
+
+/* Input numbers */
+A, B : float;
+
+/*
+ * Desired operation:
+ * - Addition=0
+ * - Subtraction=1
+ * - Multiplication=2
+ * - Divison=3
+ */
+operation : int;
+
+{
+    input(A);
+    input(B);
+    input(operation);
+
+    switch (operation) {
+        default:
+            output(1);
+            break;
+        case 0:
+            output(A + B);
+            break;
+        case 1:
+            output(A - B);
+            break;
+        case 2:
+            output(A * B);
+            break;
+        case 3:
+            /* B is a float so the immediate 0 is implicitly cast to a float */
+            if (B == 0)
+                output(2);
+            else
+                output(A / B);
+            break;
+    }
+}
+```
+
+</td>
+<td>
+
+```{assembly, attr.source='.numberLines'}
+RINP A
+RINP B
+IINP operation
+INQL t1 operation 0
+JMPZ 15 t1
+INQL t2 operation 1
+JMPZ 18 t2
+INQL t3 operation 2
+JMPZ 21 t3
+INQL t4 operation 3
+JMPZ 24 t4
+JUMP 31
+IPRT 1
+JUMP 31
+RADD t5 A B
+RPRT t5
+JUMP 31
+RSUB t6 A B
+RPRT t6
+JUMP 31
+RMLT t7 A B
+RPRT t7
+JUMP 31
+ITOR t8 0
+REQL t9 B t8
+JMPZ 29 t9
+IPRT 2
+JUMP 31
+RDIV t10 A B
+RPRT t10
+HALT
+```
+
+</td>
+    </tr>
 </table>

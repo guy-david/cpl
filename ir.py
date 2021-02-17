@@ -52,10 +52,7 @@ class Output(Statement):
     def __init__(self, expr):
         self.expr = expr
 
-class Value:
-    pass
-
-class Use(Value):
+class Use:
     def __init__(self, variable):
         self.variable = variable
 
@@ -65,7 +62,7 @@ class Use(Value):
     def __str__(self):
         return str(self.variable)
 
-class Immediate(Value):
+class Immediate:
     def __init__(self, value):
         self.value = value
 
@@ -79,7 +76,7 @@ class Immediate(Value):
     def __str__(self):
         return str(self.value)
 
-class Operator(Value):
+class Operator:
     def __init__(self, *args):
         self.operands = list(args)
 

@@ -176,7 +176,9 @@ operation : int;
             output(A * B);
             break;
         case 3:
-            /* B is a float so the immediate 0 is implicitly cast to a float */
+            /* B is a float so the immediate 0 is
+             * implicitly casted to a float
+             */
             if (B == 0)
                 output(2);
             else
